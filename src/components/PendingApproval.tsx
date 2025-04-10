@@ -1,21 +1,21 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Clock } from 'lucide-react';
-import { useAuthStore } from '../store/auth';
+"use client"
+import { useNavigate } from "react-router-dom"
+import { Clock } from "lucide-react"
+import { useAuthStore } from "../store/auth"
 
 export function PendingApproval() {
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+  const navigate = useNavigate()
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+    logout()
+    navigate("/")
+  }
 
   if (!user) {
-    navigate('/');
-    return null;
+    navigate("/")
+    return null
   }
 
   return (
@@ -26,8 +26,7 @@ export function PendingApproval() {
         </div>
         <h2 className="text-2xl font-bold text-center mb-4">Pending Approval</h2>
         <p className="text-gray-600 text-center mb-6">
-          Your account is pending administrator approval. Please contact your administrator
-          for access.
+          Your account is pending administrator approval. Please contact your administrator for access.
         </p>
         <button
           onClick={handleLogout}
@@ -37,5 +36,5 @@ export function PendingApproval() {
         </button>
       </div>
     </div>
-  );
+  )
 }

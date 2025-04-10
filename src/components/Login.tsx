@@ -1,24 +1,35 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield } from 'lucide-react';
-import { useAuthStore } from '../store/auth';
+"use client"
+
+import type React from "react"
+import { useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
+import { Shield } from "lucide-react"
+import { useAuthStore } from "../store/auth"
 
 export function Login() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const login = useAuthStore((state) => state.login);
-  const navigate = useNavigate();
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const login = useAuthStore((state) => state.login)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
+    setError("")
+
     try {
-      await login(username, password);
-      navigate('/dashboard');
+      await login(username, password)
+      const user = useAuthStore.getState().user
+
+      if (user?.isApproved) {
+        navigate("/dashboard")
+      } else {
+        navigate("/pending")
+      }
     } catch (err) {
-      setError('Invalid credentials');
+      setError("Invalid credentials")
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -54,7 +65,15 @@ export function Login() {
             Sign In
           </button>
         </form>
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-blue-600 hover:text-blue-800">
+              Register
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
-  );
+  )
 }
