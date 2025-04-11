@@ -3,8 +3,6 @@
 
 A comprehensive dashboard for managing AWS cloud infrastructure resources across multiple regions.
 
-![Infrastructure Control Panel](https://i.imgur.com/example.png)
-
 ## Features
 
 - **Multi-Region Support**: Manage resources in us-east-1 and ap-south-1 regions
@@ -36,7 +34,7 @@ A comprehensive dashboard for managing AWS cloud infrastructure resources across
 
 1. Clone the repository:
    \`\`\`bash
-   git clone https://github.com/yourusername/infrastructure-control-panel.git
+   git clone
    cd infrastructure-control-panel
    \`\`\`
 
