@@ -1,0 +1,15 @@
+node_modules
+dist
+infrastructure_manager.db
+*.log
+*.env
+Dockerfile
+docker-compose.yml
+README.md
+LICENSE
+*.md
+.git
+.gitignore
+.vscode
+.idea
+npm-debug.log*
