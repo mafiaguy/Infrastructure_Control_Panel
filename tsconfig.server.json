@@ -1,14 +1,19 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
+    // Use ECMAScript modules to match package.json type: module
+    "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "dist",
     "noEmit": false,
     "allowImportingTsExtensions": false,
     "esModuleInterop": true,
-    "target": "ES2020"
+    "target": "ES2022",
+    // Allow implicit any for handler parameters
+    "noImplicitAny": false
   },
-  "include": ["src/server.ts"],
+  // Include all source files and type declarations for server build
+  // Only compile server code and auxiliary type declarations
+  "include": ["src/server.ts", "src/better-sqlite3.d.ts"],
   "exclude": ["src/**/*.spec.ts"]
 } 

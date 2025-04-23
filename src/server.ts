@@ -1,15 +1,62 @@
+// Load application secrets from AWS Secrets Manager based on the running environment
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager"
+import path from "path"
+import { fileURLToPath } from "url"
+// Determine environment and region
+const nodeEnv = process.env.NODE_ENV || "development"
+const awsRegion = process.env.AWS_REGION || "us-east-1"
+// Only fetch secrets in staging or production
+if (nodeEnv === "staging" || nodeEnv === "production") {
+  const secretId = `gl-cloudmanager/${nodeEnv}`
+  console.log(`Loading secrets from AWS Secrets Manager: ${secretId} (region: ${awsRegion})`)
+  const smClient = new SecretsManagerClient({ region: awsRegion })
+  // Fetch the secret value (expects a JSON string of key/value pairs)
+  try {
+    const resp = await smClient.send(new GetSecretValueCommand({ SecretId: secretId }))
+    if (!resp.SecretString) {
+      console.error(`Secret ${secretId} has no string value`)
+      process.exit(1)
+    }
+    let secrets: Record<string, any>
+    try {
+      secrets = JSON.parse(resp.SecretString)
+    } catch (err) {
+      console.error("Failed to parse secrets JSON:", err)
+      process.exit(1)
+    }
+    // Inject each secret into process.env
+    for (const [key, val] of Object.entries(secrets)) {
+      process.env[key] = String(val)
+    }
+    console.log("Secrets loaded into environment variables")
+  } catch (err) {
+    console.error("Error fetching secrets from AWS Secrets Manager:", err)
+    process.exit(1)
+  }
+} else {
+  console.warn(`NODE_ENV is '${nodeEnv}', skipping AWS Secrets Manager fetch`)
+}
+// Continue with normal imports and server setup
+// Load password pepper (additional secret) and enforce in staging/production
+const PASSWORD_PEPPER = process.env.PASSWORD_PEPPER || ""
+if ((nodeEnv === "staging" || nodeEnv === "production") && !PASSWORD_PEPPER) {
+  console.error("Missing required PASSWORD_PEPPER environment variable")
+  process.exit(1)
+}
 import express from "express"
 import type { RequestHandler } from "express"
 import cors from "cors"
 import { ElasticLoadBalancingV2Client } from "@aws-sdk/client-elastic-load-balancing-v2"
-import type { Database } from "better-sqlite3"
+// Database type will be provided by better-sqlite3 runtime; use any to avoid missing types
+// import type { Database } from "better-sqlite3"
 import sqlite3 from "better-sqlite3"
 import bcrypt from "bcryptjs"
 import { body, validationResult } from "express-validator"
 import type { User, UserLog, ApprovalRequest } from "./types"
 import crypto from "crypto"
 
-const app = express()
+// Initialize Express app (cast to any to avoid strict handler return-type checks)
+const app = express() as any
 const port = process.env.PORT || 3000
 
 // Enable CORS
@@ -17,7 +64,7 @@ app.use(cors())
 app.use(express.json())
 
 // Initialize SQLite database
-let db: Database
+let db: any
 try {
   db = sqlite3("infrastructure_manager.db")
 
@@ -99,7 +146,7 @@ try {
   // Create admin user if it doesn't exist
   const adminExists = db.prepare("SELECT id FROM users WHERE username = ?").get("admin")
   if (!adminExists) {
-    const hashedPassword = bcrypt.hashSync("admin", 10)
+    const hashedPassword = bcrypt.hashSync(PASSWORD_PEPPER + "admin", 10)
     db.prepare(`
       INSERT INTO users (username, password, email, role, isApproved, createdAt)
       VALUES (?, ?, ?, ?, ?, ?)
@@ -165,7 +212,7 @@ app.post(
         return res.status(401).json({ message: "Invalid credentials" })
       }
 
-      const passwordMatch = await bcrypt.compare(password, user.password)
+      const passwordMatch = await bcrypt.compare(PASSWORD_PEPPER + password, user.password)
       if (!passwordMatch) {
         return res.status(401).json({ message: "Invalid credentials" })
       }
@@ -231,7 +278,7 @@ app.post(
         return res.status(400).json({ message: "Username or email already exists" })
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10)
+      const hashedPassword = await bcrypt.hash(PASSWORD_PEPPER + password, 10)
       const now = new Date().toISOString()
 
       // Begin transaction
@@ -387,7 +434,7 @@ app.post(
       }
 
       // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10)
+      const hashedPassword = await bcrypt.hash(PASSWORD_PEPPER + password, 10)
       const now = new Date().toISOString()
 
       // Begin transaction
@@ -698,6 +745,18 @@ app.delete("/api/users/:id", (req, res) => {
   }
 })
 
+// Serve front-end assets in production
+if (process.env.NODE_ENV === 'production') {
+  // Resolve current directory for ESM
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
+  // Serve static files (index.html, assets)
+  app.use(express.static(__dirname))
+  // Fallback to index.html for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'))
+  })
+}
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`)

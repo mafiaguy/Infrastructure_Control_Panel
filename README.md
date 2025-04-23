@@ -138,3 +138,26 @@ Please make sure to add the following environment variables to your project:
 
 <AddEnvironmentVariables names={["PORT", "AWS_REGION"]} />
 
+## Docker Setup
+
+To build and run the application in a Docker container for production:
+
+1. Build the Docker image:
+
+   ```bash
+   docker build -t cloud-infrastructure-manager .
+   ```
+
+2. Run the container (pass in your AWS region and any other required environment variables):
+
+   ```bash
+   docker run -d \
+     --name cloud-infra-manager \
+     -e NODE_ENV=production \
+     -e AWS_REGION=us-east-1 \
+     -p 3000:3000 \
+     cloud-infrastructure-manager
+   ```
+
+The application (API and front-end) will be available at http://localhost:3000
+
